@@ -1,0 +1,59 @@
+---
+- name: Instalar Docker nos servidores
+  hosts: 
+    - host1.exemplo.com
+    - host2.exemplo.com
+    - host3.exemplo.com
+
+  tasks:
+    - name: Atualizar o sistema
+      become: true
+      dnf:
+        name: '*'
+        state: latest
+      tags: 
+        - update
+
+    - name: Remover versões outras versoes do docker que sejam antigas
+      become: true
+      dnf:
+        name: docker docker-common docker-selinux docker-engine-selinux docker-engine docker-ce
+        state: absent
+      tags:
+        - cleanup
+
+    - name: Configurar repositório do Docker
+      become: true
+      command: dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      tags:
+        - repository
+
+    - name: Instalar Docker
+      become: true
+      dnf:
+        name: docker-ce
+        state: latest
+      tags:
+        - install
+
+    - name: Iniciar e habilitar o serviço Docker
+      become: true
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+      tags:
+        - service
+
+    - name: Verificar versão do Docker
+      command: docker --version
+      register: docker_version
+      changed_when: false
+      tags:
+        - check
+
+    - name: Exibir versão do Docker
+      debug:
+        var: docker_version.stdout_lines
+      tags:
+        - check
